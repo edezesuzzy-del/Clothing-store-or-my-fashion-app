@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suzy's Clothing Store</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        function App() {
+            const [activeTab, setActiveTab] = React.useState('store');
+            const [cart, setCart] = React.useState([]);
+            const [orders, setOrders] = React.useState(() => {
+                const saved = localStorage.getItem('suzy_orders');
+                return saved ? JSON.parse(saved) : [];
+            });
+            const [products, setProducts] = React.useState([
+                { id: 1, name: 'Classic Ankara Dress', price: 25000, category: 'Dresses', image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80' },
+                { id: 2, name: 'Designer Two-Piece Set', price: 35000, category: 'Sets', image: 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80' },
+                { id: 3, name: 'Casual Linen Shirt', price: 15000, category: 'Tops', image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80' }
+            ]);
+
+            const [customerInfo, setCustomerInfo] = React.useState({ name: '', phone: '', address: '' });
+            const [orderSuccess, setOrderSuccess] = React.useState(false);
+            const [newProd, setNewProd] = React.useState({ name: '', price: '', category: '', image: '' });
+
+            React.useEffect(() => {
+                localStorage.setItem('suzy_orders', JSON.stringify(orders));
+            }, [orders]);
+
+            const addToCart = (product) => {
+                setCart([...cart, product]);
+                alert(product.name + ' added to cart!');
+            };
+
+            const checkout = (e) => {
+                e.preventDefault();
+                if (cart.length === 0) return alert('Your cart is empty!');
+                if (!customerInfo.name || !customerInfo.phone || !customerInfo.address) {
+                    return alert('Please fill in all contact and delivery details.');
+                }
+
+                const newOrder = {
+                    id: 'ORD-' + Date.now().toString().slice(-6),
+                    date: new Date().toLocaleString(),
+                    customer: customerInfo,
+                    items: cart,
+                    total: cart.reduce((sum, item) => sum + item.price, 0),
+                    status: 'Pending'
+                };
+
+                setOrders([newOrder, ...orders]);
+                setCart([]);
+                setCustomerInfo({ name: '', phone: '', address: '' });
+                setOrderSuccess(true);
+                setTimeout(() => setOrderSuccess(false), 5000);
+            };
+
+            const updateStatus = (id, status) => {
+                setOrders(orders.map(o => o.id === id ? { ...o, status } : o));
+            };
+
+            const addProduct = (e) => {
+                e.preventDefault();
+                if (!newProd.name || !newProd.price || !newProd.image) return alert('Please fill product details');
+                const product = {
+                    id: Date.now(),
+                    name: newProd.name,
+                    price: Number(newProd.price),
+                    category: newProd.category || 'General',
+                    image: newProd.image
+                };
+                setProducts([...products, product]);
+                setNewProd({ name: '', price: '', category: '', image: '' });
+                alert('Product added successfully!');
+            };
+
+            return (
+                <div className="min-h-screen pb-12">
+                    <header className="bg-black text-white shadow-md sticky top-0 z-50">
+                        <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+                            <h1 className="text-xl font-bold tracking-wider">✨ SUZY'S CLOTHING</h1>
+                            <nav className="space-x-4">
+                                <button onClick={() => setActiveTab('store')} className={`px-3 py-1 rounded ${activeTab === 'store' ? 'bg-white text-black font-semibold' : 'hover:text-gray-300'}`}>Store ({cart.length})</button>
+                                <button onClick={() => setActiveTab('admin')} className={`px-3 py-1 rounded ${activeTab === 'admin' ? 'bg-white text-black font-semibold' : 'hover:text-gray-300'}`}>🔒 Admin Dashboard</button>
+                            </nav>
+                        </div>
+                    </header>
+
+                    <main className="max-w-6xl mx-auto px-4 mt-6">
+                        {orderSuccess && (
+                            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6 text-center">
+                                🎉 Order placed successfully! Suzy has received your order details.
+                            </div>
+                        )}
+
+                        {activeTab === 'store' ? (
+                            <div className="grid md:grid-cols-3 gap-8">
+                                <div className="md:col-span-2">
+                                    <h2 className="text-2xl font-bold mb-4">Our Collection</h2>
+                                    <div className="grid sm:grid-cols-2 gap-4">
+                                        {products.map(p => (
+                                            <div key={p.id} className="bg-white rounded-lg shadow overflow-hidden border">
+                                                <img src={p.image} alt={p.name} className="w-full h-56 object-cover" />
+                                                <div className="p-4">
+                                                    <span className="text-xs text-gray-500 uppercase">{p.category}</span>
+                                                    <h3 className="font-bold text-lg">{p.name}</h3>
+                                                    <p className="text-black font-semibold mt-1">₦{p.price.toLocaleString()}</p>
+                                                    <button onClick={() => addToCart(p)} className="mt-3 w-full bg-black text-white py-2 rounded text-sm hover:bg-gray-800">Add to Cart</button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="bg-white p-6 rounded-lg shadow border h-fit">
+                                    <h2 className="text-xl font-bold mb-4">Your Cart ({cart.length})</h2>
+                                    {cart.length === 0 ? (
+                                        <p className="text-gray-500 text-sm">Your cart is empty.</p>
+                                    ) : (
+                                        <div>
+                                            <ul className="divide-y max-h-60 overflow-y-auto mb-4">
+                                                {cart.map((item, idx) => (
+                                                    <li key={idx} className="py-2 flex justify-between text-sm">
+                                                        <span>{item.name}</span>
+                                                        <span className="font-semibold">₦{item.price.toLocaleString()}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                            <div className="border-t pt-3 flex justify-between font-bold text-lg mb-4">
+                                                <span>Total:</span>
+                                                <span>₦{cart.reduce((s, i) => s + i.price, 0).toLocaleString()}</span>
+                                            </div>
+
+                                            <form onSubmit={checkout} className="space-y-3">
+                                                <div>
+                                                    <label className="block text-xs font-medium text-gray-700">Full Name</label>
+                                                    <input type="text" required value={customerInfo.name} onChange={e=>setCustomerInfo({...customerInfo, name: e.target.value})} className="w-full border rounded p-2 text-sm mt-1" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-medium text-gray-700">Phone Number</label>
+                                                    <input type="tel" required value={customerInfo.phone} onChange={e=>setCustomerInfo({...customerInfo, phone: e.target.value})} className="w-full border rounded p-2 text-sm mt-1" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-medium text-gray-700">Delivery Address</label>
+                                                    <textarea required value={customerInfo.address} onChange={e=>setCustomerInfo({...customerInfo, address: e.target.value})} className="w-full border rounded p-2 text-sm mt-1 rows-2"></textarea>
+                                                </div>
+                                                <button type="submit" className="w-full bg-green-600 text-white py-2 rounded font-semibold hover:bg-green-700">Place Order Now</button>
+                                            </form>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            <div>
+                                <h2 className="text-2xl font-bold mb-6">🔒 Admin Dashboard</h2>
+                                
+                                <div className="bg-white p-6 rounded-lg shadow border mb-8">
+                                    <h3 className="text-lg font-bold mb-4">Add New Product</h3>
+                                    <form onSubmit={addProduct} className="grid sm:grid-cols-4 gap-4">
+                                        <input type="text" placeholder="Product Name" required value={newProd.name} onChange={e=>setNewProd({...newProd, name: e.target.value})} className="border p-2 text-sm rounded" />
+                                        <input type="number" placeholder="Price (₦)" required value={newProd.price} onChange={e=>setNewProd({...newProd, price: e.target.value})} className="border p-2 text-sm rounded" />
+                                        <input type="text" placeholder="Image URL (Unsplash/Link)" required value={newProd.image} onChange={e=>setNewProd({...newProd, image: e.target.value})} className="border p-2 text-sm rounded" />
+                                        <button type="submit" className="bg-black text-white py-2 rounded text-sm font-semibold">Add Product</button>
+                                    </form>
+                                </div>
+
+                                <h3 className="text-xl font-bold mb-4">Customer Orders ({orders.length})</h3>
+                                {orders.length === 0 ? (
+                                    <p className="text-gray-500">No orders received yet.</p>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {orders.map(order => (
+                                            <div key={order.id} className="bg-white p-5 rounded-lg shadow border flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                                <div>
+                                                    <span className="text-xs font-bold bg-gray-100 px-2 py-1 rounded">{order.id}</span>
+                                                    <span className="text-xs text-gray-500 ml-2">{order.date}</span>
+                                                    <h4 className="font-bold text-lg mt-1">{order.customer.name} ({order.customer.phone})</h4>
+                                                    <p className="text-sm text-gray-600">Address: {order.customer.address}</p>
+                                                    <div className="mt-2 text-sm">
+                                                        <span className="font-semibold">Items:</span> {order.items.map(i => i.name).join(', ')}
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="font-bold text-lg text-green-600 mb-2">₦{order.total.toLocaleString()}</p>
+                                                    <select value={order.status} onChange={e=>updateStatus(order.id, e.target.value)} className="border p-1 rounded text-sm font-semibold bg-gray-50">
+                                                        <option value="Pending">Pending</option>
+                                                        <option value="Processing">Processing</option>
+                                                        <option value="Completed">Completed</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
